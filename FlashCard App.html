@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Criminal Law Flashcards</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+h1 {
+    color: white;
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 2em;
+}
+
+.controls {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+select, button {
+    padding: 10px 20px;
+    font-size: 16px;
+    margin: 5px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.shuffle-btn {
+    background: #48bb78;
+    color: white;
+    font-weight: bold;
+}
+
+.card-wrapper {
+    perspective: 1000px;
+    margin-bottom: 30px;
+}
+
+.flashcard {
+    width: 100%;
+    height: 400px;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.6s;
+}
+
+.flashcard.flipped {
+    transform: rotateY(180deg);
+}
+
+.card-side {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    border-radius: 15px;
+    padding: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.front {
+    background: white;
+    color: #333;
+    font-size: 1.3em;
+    font-weight: bold;
+}
+
+.back {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    transform: rotateY(180deg);
+    font-size: 1.1em;
+    line-height: 1.8;
+    overflow-y: auto;
+}
+
+.navigation {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.nav-btn {
+    padding: 15px 30px;
+    font-size: 18px;
+    background: white;
+    color: #667eea;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    margin: 0 10px;
+}
+
+.nav-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.counter {
+    color: white;
+    font-size: 1.2em;
+    margin: 20px 0;
+    font-weight: bold;
+}
+
+.hint {
+    color: white;
+    text-align: center;
+    margin-top: 20px;
+    font-style: italic;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h1>⚖️ Criminal Law Flashcards</h1>
+    
+    <div class="controls">
+        <select id="category">
+            <option value="all">All Topics</option>
+            <option value="punishment">Punishment</option>
+            <option value="actus">Actus Reus</option>
+            <option value="mens">Mens Rea</option>
+            <option value="causation">Causation</option>
+            <option value="murder">Murder</option>
+            <option value="felony">Felony Murder</option>
+        </select>
+        <button class="shuffle-btn" onclick="shuffle()">🔀 Shuffle</button>
+    </div>
+
+    <div class="card-wrapper">
+        <div class="flashcard" id="card" onclick="flip()">
+            <div class="card-side front" id="front"></div>
+            <div class="card-side back" id="back"></div>
+        </div>
+    </div>
+
+    <div class="counter" id="counter"></div>
+
+    <div class="navigation">
+        <button class="nav-btn" id="prev" onclick="prev()">← Previous</button>
+        <button class="nav-btn" id="next" onclick="next()">Next →</button>
+    </div>
+
+    <div class="hint">💡 Click card to flip • Arrow keys to navigate</div>
+</div>
+
+<script>
+const cards = [
+    {cat:'punishment', q:'What are the two main theories of punishment?', a:'<b>1. Retribution</b> (backward) - punish because D deserves it<br><br><b>2. Utilitarian</b> (forward) - punish for social good: deterrence, rehabilitation, incapacitation'},
+    {cat:'punishment', q:'What is prosecutorial discretion?', a:'Prosecutors have <b>ABSOLUTE discretion</b> in charging decisions - NOT reviewable (Inmates of Attica v. Rockefeller)'},
+    {cat:'punishment', q:'Constitutional right to jury trial?', a:'<b>6th Amendment:</b> Right to jury if sentence > 6 months (Duncan v. Louisiana). Must be unanimous.'},
+    {cat:'punishment', q:'What is restorative justice?', a:'Alternative focusing on: Who was harmed? How can victim needs be addressed? How can harm be repaired?'},
+    {cat:'actus', q:'What is Actus Reus?', a:'Commission of voluntary act prohibited by law<br><br>3 requirements: (1) Act (2) Voluntary (3) Prohibited by law'},
+    {cat:'actus', q:'What does "voluntary" mean for actus reus?', a:'Person had physical control - NOT same as intent!<br><br>Excludes: reflexes, unconsciousness, sleep, hypnosis, being forced'},
+    {cat:'actus', q:'Can status alone be criminalized?', a:'<b>NO</b> - Cannot criminalize status like addiction (Robinson)<br><br>BUT can criminalize conduct related to status'},
+    {cat:'actus', q:'When is there liability for omissions?', a:'Generally NO unless legal duty exists:<br>1. Statute<br>2. Status relationship<br>3. Contract<br>4. Voluntary assumption<br>5. D creates risk'},
+    {cat:'mens', q:'What is Mens Rea?', a:'"Guilty mind" - mental state required for criminal liability<br><br>Must show D had MR for EACH element: conduct, attendant circumstances, result'},
+    {cat:'mens', q:'What are the 4 MPC mental states?', a:'<b>1. Purposely</b> - conscious objective<br><b>2. Knowingly</b> - practically certain<br><b>3. Recklessly</b> - consciously disregards risk<br><b>4. Negligently</b> - should be aware of risk'},
+    {cat:'mens', q:'MPC default mens rea if none specified?', a:'Default to <b>RECKLESSNESS</b> for all elements (MPC 2.02)'},
+    {cat:'mens', q:'MPC rules for determining mens rea?', a:'1. Must be at least negligent<br>2. No MR listed → reckless<br>3. One MR → applies to ALL elements<br>4. Higher MR satisfies lower'},
+    {cat:'mens', q:'Define MPC "Recklessly"', a:'<b>Consciously disregards</b> substantial & unjustifiable risk<br><br>Gross deviation from standard of law-abiding person'},
+    {cat:'mens', q:'Define MPC "Negligently"', a:'<b>Should have been aware</b> of substantial & unjustifiable risk<br><br>Gross deviation from reasonable person standard'},
+    {cat:'mens', q:'CL approach to determining mens rea?', a:'Use statutory interpretation (Cunningham)<br><br>Terms: "malice" (often reckless), "willfully" (often knowingly)<br><br>Presume MR applies to ALL elements'},
+    {cat:'actus', q:'What is strict liability?', a:'Government need NOT prove mens rea for one or more elements<br><br><b>CL:</b> Strong presumption AGAINST<br><b>MPC:</b> Does NOT recognize'},
+    {cat:'actus', q:'Staples v. US holding?', a:'Possessing automatic gun NOT strict liability - must prove D <b>knew</b> gun was automatic<br><br>Presumption against strict liability'},
+    {cat:'mens', q:'General rule for mistake of fact?', a:'Defense if <b>negates required mens rea</b><br><br>Both reasonable & unreasonable mistakes OK (unless MR is negligence)<br><br><b>CL exceptions:</b> Lesser crime & morally wrong'},
+    {cat:'mens', q:'MPC approach to mistake of fact?', a:'Mistake is defense if negates MR<br><br><b>REJECTS</b> "lesser crime" and "morally wrong" principles (more favorable to D)'},
+    {cat:'mens', q:'General rule for mistake of law?', a:'<b>"Ignorance of law is NO excuse"</b><br><br>Generally NOT a defense'},
+    {cat:'mens', q:'4 exceptions to mistake of law?', a:'1. Reasonable reliance on official statement (Marrero)<br>2. Mistake negates MR (Regina v. Smith)<br>3. Mistake about legal duty<br>4. Failure to register (Lambert)'},
+    {cat:'mens', q:'Marrero holding?', a:'Own interpretation of statute NOT reasonable reliance on official statement<br><br>Mistake of law NOT a defense'},
+    {cat:'causation', q:'When does causation matter?', a:'ONLY in <b>RESULTS CRIMES</b> - crimes with result element (death, injury)<br><br>If no result element, no causation needed'},
+    {cat:'causation', q:'Common Law causation test?', a:'Two parts:<br><b>1. Factual ("but for")</b><br><b>2. Proximate</b> - intervening acts reasonably foreseeable (Acosta, Arzon)'},
+    {cat:'causation', q:'What intervening causes are foreseeable (don\'t break chain)?', a:'• Responsive/dependent causes<br>• Grossly negligent medical care (unless sole cause)<br>• Intended consequences & transferred intent<br>• Vulnerable victim<br>• Involuntary human action'},
+    {cat:'causation', q:'What breaks chain of causation?', a:'• De minimis contribution<br>• Coincidental causes<br>• <b>Free, deliberate, informed human intervention</b> (Campbell, Root)'},
+    {cat:'causation', q:'Shabazz holding?', a:'Grossly negligent medical care does NOT break chain UNLESS it\'s the <b>sole cause</b> of death/injury'},
+    {cat:'causation', q:'MPC causation test?', a:'1. <b>Factual:</b> But for<br>2. <b>Look at MR:</b> Purposely/knowingly = within purpose/contemplation; Recklessly/negligently = within risk D aware/should be aware of'},
+    {cat:'murder', q:'Murder vs. Manslaughter difference?', a:'<b>Murder:</b> WITH malice<br><b>Manslaughter:</b> WITHOUT malice<br><br>Malice = intent to kill, grave harm, depraved heart, OR felony murder'},
+    {cat:'murder', q:'Carroll approach to murder?', a:'<b>ANY intent to kill = premeditation = 1st degree murder</b><br><br>No time period required. Even instant intent is premeditated'},
+    {cat:'murder', q:'Guthrie approach to murder?', a:'<b>Premeditated + intent = 1st degree</b> (calculation, planning, opportunity to change mind)<br><br><b>Spontaneous + intent = 2nd degree</b>'},
+    {cat:'murder', q:'MPC approach to murder?', a:'Committed <b>purposely or knowingly</b> = MURDER (no degrees)<br><br>Doesn\'t distinguish premeditated vs spontaneous'},
+    {cat:'murder', q:'CL voluntary manslaughter test?', a:'4 elements:<br>1. Heat of passion (subjective)<br>2. Adequate & reasonable provocation (objective)<br>3. No cooling off time<br>4. Causation'},
+    {cat:'murder', q:'Traditional categories of adequate provocation?', a:'1. Extreme assault/battery<br>2. Mutual combat<br>3. Illegal arrest<br>4. Attack on relative<br>5. Spouse adultery<br><br>Words alone insufficient (strict approach)'},
+    {cat:'murder', q:'MPC voluntary manslaughter?', a:'<b>Extreme Emotional Disturbance (EED)</b> for which there was reasonable explanation/excuse<br><br>More favorable to D than CL'},
+    {cat:'murder', q:'CL involuntary manslaughter?', a:'Unintentional killing by:<br>• <b>Recklessness</b> OR<br>• <b>Gross criminal negligence</b><br><br>(Gross deviation from standard of care - Welansky)'},
+    {cat:'murder', q:'MPC manslaughter (reckless)?', a:'<b>Reckless manslaughter:</b> Consciously disregards substantial & unjustifiable risk<br><br>Gross deviation from RP standard (Hall)'},
+    {cat:'murder', q:'MPC criminally negligent homicide?', a:'D <b>should have been aware</b> of substantial & unjustifiable risk + gross deviation<br><br>(Lesser than manslaughter)'},
+    {cat:'murder', q:'What is depraved heart murder?', a:'Unintentional killing with <b>grossly reckless</b> conduct showing <b>depraved indifference to human life</b><br><br>Malice is implied (Malone, Fleming)'},
+    {cat:'murder', q:'Difference between depraved heart murder and involuntary manslaughter?', a:'One of <b>degree not kind</b> (Fleming)<br><br>Depraved heart = MORE extreme recklessness showing depraved indifference'},
+    {cat:'murder', q:'MPC approach to depraved heart?', a:'<b>Extreme reckless murder:</b> Recklessly under circumstances showing "extreme indifference to value of human life"'},
+    {cat:'felony', q:'What is felony murder?', a:'D liable for MURDER if death during & in furtherance of inherently dangerous felony<br><br><b>CL ONLY - MPC REJECTS</b>'},
+    {cat:'felony', q:'Felony murder checklist?', a:'1. During & in furtherance of felony<br>2. Felony <b>inherently dangerous</b><br>3. Prove MR & AR of predicate felony<br>4. Causation: but-for + nexus (foreseeability NOT required)'},
+    {cat:'felony', q:'Two tests for "inherently dangerous"?', a:'<b>Abstract</b> (CA/Phillips): Dangerous in ALL circumstances?<br><br><b>As committed</b> (Majority/Hines): Dangerous as D actually did it?'},
+    {cat:'felony', q:'What is the merger doctrine?', a:'Underlying felony must be <b>independent of killing</b><br><br>Assault-type felonies MERGE with killing and can\'t be predicate for FM'},
+    {cat:'felony', q:'Agency vs Proximate Cause theory?', a:'<b>Agency</b> (Canola): D liable only for co-felon killings<br><br><b>Proximate:</b> D liable for ANY killing if foreseeable'},
+    {cat:'felony', q:'What is misdemeanor-manslaughter?', a:'Death during misdemeanor = <b>involuntary manslaughter</b><br><br>Requires nexus; sometimes limited to dangerous misdemeanors'},
+    {cat:'murder', q:'CL perfect self-defense?', a:'D must <b>honestly AND reasonably believe</b> deadly force <b>necessary</b> to protect against <b>imminent</b> unlawful deadly force<br><br>= Complete acquittal'},
+    {cat:'murder', q:'What is imperfect self-defense?', a:'Minority CL: D <b>honestly BUT unreasonably believed</b> force necessary<br><br>Reduces murder to manslaughter (not acquittal)'},
+    {cat:'murder', q:'MPC approach to self-defense?', a:'Force not justified unless D "believes" force <b>immediately necessary</b> to protect against death/serious bodily harm<br><br>If belief reckless/negligent → liable for reckless/negligent homicide'},
+    {cat:'murder', q:'Duty to retreat?', a:'<b>Duty to retreat states:</b> Must retreat if aware of complete safety<br><br><b>Stand Your Ground (34 states):</b> Can use deadly force even if retreat possible'},
+    {cat:'murder', q:'First aggressor rule?', a:'<b>Deadly first aggressor:</b> Complete bar (Peterson)<br><br><b>Non-deadly:</b> Most states = bar; Minority & MPC = can use if victim escalates<br><br>Exception: Withdrawal in good faith'},
+    {cat:'murder', q:'M\'Naghten Rule?', a:'D either:<br>1. Didn\'t know nature/quality of act; OR<br>2. Didn\'t know wrong<br><br>Strict cognitive-only test - complete failure to understand'},
+    {cat:'murder', q:'Irresistible Impulse test?', a:'D incapable of distinguishing right/wrong (cognitive) OR actions beyond D\'s control (volitional)<br><br>Very strict - zero capacity'},
+    {cat:'murder', q:'MPC insanity test?', a:'D <b>lacks substantial capacity</b> to:<br>1. Appreciate criminality (cognitive); OR<br>2. Conform conduct to law (volitional)<br><br>LOOSER than M\'Naghten (Blake)'},
+    {cat:'murder', q:'Lyons case?', a:'5th Circuit REJECTED MPC and returned to M\'Naghten (cognitive only) after Hinckley<br><br>No volitional component'},
+    {cat:'murder', q:'4 approaches to insanity defense?', a:'1. M\'Naghten (cognitive - strict)<br>2. Irresistible Impulse (both - strict)<br>3. MPC (both - loose)<br>4. Barred (no defense but evidence at sentencing)'},
+    {cat:'murder', q:'What is diminished capacity?', a:'Evidence of mental disease/defect to show D did NOT have required mens rea<br><br>Failure of proof defense (NOT affirmative like insanity)'},
+    {cat:'murder', q:'State of law on diminished capacity?', a:'<b>MPC & most:</b> Allowed to negate MR<br><b>Some:</b> Only for "specific intent"<br><b>Minority (AZ, CA):</b> Total ban except for insanity (Clark v. Arizona)'},
+    {cat:'murder', q:'Voluntary intoxication defense?', a:'<b>Most states:</b> Only for "specific intent" (Hood)<br><b>MPC:</b> Only for purposeful/knowing<br><b>Some:</b> Only premeditated murder<br><b>14 states:</b> NEVER'},
+    {cat:'murder', q:'Difference: insanity, diminished capacity, intoxication?', a:'<b>Insanity:</b> Affirmative defense (D burden) → NGI & civil commitment<br><b>Dim Cap & Intox:</b> Failure of proof (P burden) → negates MR, reduces crime'},
+    {cat:'murder', q:'Traditional CL rape approach?', a:'Lack of consent if:<br>• Victim resisted AND overcome by force; OR<br>• Prevented from resisting by threats<br><br>(Rusk - force/resistance required)'},
+    {cat:'murder', q:'Modern consent-based approach to sexual assault?', a:'<b>Intercourse + lack of consent = assault</b> (MTS)<br><br>"No means no" vs "Yes means yes" (affirmative consent)'},
+    {cat:'murder', q:'Mens rea for "without consent" element?', a:'States vary: Actual knowledge (strictest), Recklessness, Negligence, or Strict liability<br><br>Most allow reasonable mistake of fact defense'},
+    {cat:'murder', q:'New MPC (2021) changes to sexual assault?', a:'• Gender neutral<br>• Eliminated marital exception<br>• "No means no"<br>• Graded offenses'}
+];
+
+let current = 0;
+let filtered = [...cards];
+let isFlipped = false;
+
+function show() {
+    document.getElementById('front').innerHTML = filtered[current].q;
+    document.getElementById('back').innerHTML = filtered[current].a;
+    document.getElementById('counter').textContent = (current + 1) + ' / ' + filtered.length;
+    document.getElementById('prev').disabled = (current === 0);
+    document.getElementById('next').disabled = (current === filtered.length - 1);
+    
+    if (isFlipped) {
+        document.getElementById('card').classList.remove('flipped');
+        isFlipped = false;
+    }
+}
+
+function flip() {
+    document.getElementById('card').classList.toggle('flipped');
+    isFlipped = !isFlipped;
+}
+
+function next() {
+    if (current < filtered.length - 1) {
+        current++;
+        show();
+    }
+}
+
+function prev() {
+    if (current > 0) {
+        current--;
+        show();
+    }
+}
+
+function shuffle() {
+    for (let i = filtered.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [filtered[i], filtered[j]] = [filtered[j], filtered[i]];
+    }
+    current = 0;
+    show();
+}
+
+document.getElementById('category').addEventListener('change', function() {
+    const val = this.value;
+    filtered = val === 'all' ? [...cards] : cards.filter(c => c.cat === val);
+    current = 0;
+    show();
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight') next();
+    if (e.key === 'ArrowLeft') prev();
+    if (e.key === ' ') { e.preventDefault(); flip(); }
+});
+
+show();
+</script>
+
+</body>
+</html>
